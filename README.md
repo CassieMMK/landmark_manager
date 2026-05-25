@@ -1,12 +1,17 @@
 # 🌍 地标管理系统 (Landmark Manager)
 
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-success?style=for-the-badge&logo=vercel)](https://landmark-manager.vercel.app/)
+
 这是一个基于 React 和 Supabase 开发的高级地标管理系统，集成了交互式地图可视化、GIS（地理信息系统）工具以及云端数据库同步功能。
+
+### 🔗 在线访问地址
+🚀 **[https://landmark-manager.vercel.app/](https://landmark-manager.vercel.app/)**
 
 ## ✨ 功能特性
 
 -   **交互式地图可视化**：动态投影坐标，支持缩放、平移和地标点选。
 -   **GIS 工具箱**：
-    -   **邻近搜索 (GEORADIUS)**：基于给定坐标和半径搜索周边的地标。
+    -   **邻近搜索 (GEORADIUS)**：基于给定坐标 and 半径搜索周边的地标。
     -   **距离测量 (GEODIST)**：计算两个地标之间的哈弗辛 (Haversine) 距离。
 -   **云端数据库同步**：集成 Supabase (PostgreSQL)，实现数据的实时增删改查。
 -   **响应式设计**：完美适配桌面端和移动端浏览器。
