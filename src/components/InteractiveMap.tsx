@@ -7,11 +7,13 @@ interface InteractiveMapProps {
   centerLat: number;
   centerLng: number;
   onCenterChange: (lat: number, lng: number) => void;
+  onMapDoubleClickSetCenter: (lat: number, lng: number) => void;
   selectedLandmark: Landmark | null;
   onSelectLandmark: (landmark: Landmark) => void;
   distanceFrom?: Landmark | null;
   distanceTo?: Landmark | null;
   distanceVal?: number | null;
+  highlightedIds: Set<string>;
 }
 
 export default function InteractiveMap({
@@ -19,11 +21,13 @@ export default function InteractiveMap({
   centerLat,
   centerLng,
   onCenterChange,
+  onMapDoubleClickSetCenter,
   selectedLandmark,
   onSelectLandmark,
   distanceFrom,
   distanceTo,
   distanceVal,
+  highlightedIds,
 }: InteractiveMapProps) {
   const [zoom, setZoom] = useState<number>(2);
   const [isPanning, setIsPanning] = useState<boolean>(false);
@@ -93,6 +97,24 @@ export default function InteractiveMap({
     setIsPanning(false);
   };
 
+  // Double-click on map to set search center
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (!mapRef.current) return;
+    const rect = mapRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    const width = rect.width;
+    const height = rect.height;
+
+    const scaleX = (width / 50) * zoom;
+    const scaleY = (height / 35) * zoom;
+
+    const lng = centerLng + (clickX - width / 2) / scaleX;
+    const lat = centerLat - (clickY - height / 2) / scaleY;
+
+    onMapDoubleClickSetCenter(lat, lng);
+  };
+
   // Connecting line calculation for Distance Tool
   const lineCoords = (() => {
     if (!distanceFrom || !distanceTo) return null;
@@ -109,10 +131,11 @@ export default function InteractiveMap({
       onMouseLeave={handleMouseUp}
     >
       {/* Visual Map Canvas Grid Overlay & Grayscale Image */}
-      <div 
+      <div
         ref={mapRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
+        onDoubleClick={handleDoubleClick}
         className={`absolute inset-0 h-full w-full bg-[#dde3ed] transition-all cursor-${isPanning ? 'grabbing' : 'grab'}`}
         id="map-canvas-render"
         style={{
@@ -180,6 +203,7 @@ export default function InteractiveMap({
             const isSelected = selectedLandmark?.id === landmark.id;
             const isFrom = distanceFrom?.id === landmark.id;
             const isTo = distanceTo?.id === landmark.id;
+            const isHighlighted = highlightedIds.has(landmark.id);
 
             return (
               <div
@@ -197,8 +221,10 @@ export default function InteractiveMap({
                   title={landmark.name}
                 >
                   {/* Select highlight glow */}
-                  {isSelected && (
-                    <div className="absolute -inset-2.5 bg-[#003da6]/20 border border-[#003da6]/40 rounded-full animate-ping pointer-events-none" />
+                  {(isSelected || isHighlighted) && (
+                    <div className={`absolute -inset-2.5 border rounded-full animate-ping pointer-events-none ${
+                      isSelected ? 'bg-[#003da6]/20 border-[#003da6]/40' : 'bg-amber-400/20 border-amber-400/40'
+                    }`} />
                   )}
 
                   {/* Marker Pin Visual Shape */}
@@ -210,6 +236,8 @@ export default function InteractiveMap({
                         ? 'bg-[#006c47] text-white border-white scale-105'
                         : isTo
                         ? 'bg-[#822600] text-white border-white scale-105'
+                        : isHighlighted
+                        ? 'bg-amber-500 text-white border-white scale-105'
                         : 'bg-white hover:bg-[#eef4fe] text-[#003da6] border-[#003da6]'
                     }`}
                   >
@@ -302,12 +330,12 @@ export default function InteractiveMap({
         </div>
 
         <div className="pt-3">
-          <p className="text-[10px] uppercase font-bold tracking-wider text-gray-500 mb-0.5">Redis Key Cluster</p>
+          <p className="text-[10px] uppercase font-bold tracking-wider text-gray-500 mb-0.5">Data Source</p>
           <p className="text-xs font-bold text-[#003da6] font-mono tracking-wider">
-            NYC_GEO_INDEX
+            Supabase / Haversine
           </p>
           <p className="text-[10px] text-gray-400 mt-1 italic leading-relaxed">
-            Drag visual bounds to pan, scroll to scale index.
+            Drag to pan, double-click to set search center.
           </p>
         </div>
       </div>

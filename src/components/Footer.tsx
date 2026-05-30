@@ -12,7 +12,7 @@ export default function Footer({ showLatency = true }: FooterProps) {
         <div className="flex items-center gap-2">
           <span>© 2026 Landmark Manager</span>
           <span className="text-gray-300">|</span>
-          <span className="text-gray-400 font-mono text-[11px]">System: Spring Boot + React + Redis GEO</span>
+          <span className="text-gray-400 font-mono text-[11px]">System: React + Vite + Supabase</span>
         </div>
         
         <div className="flex gap-6 items-center">

@@ -65,7 +65,7 @@ export default function LandmarkAdd({
     const latNum = parseFloat(latitude);
     const lngNum = parseFloat(longitude);
 
-    if (isNaN(latNum) || latNum < -90 || latNum > 90 || isNaN(lngNum) || lngNum < -185 || lngNum > 180) {
+    if (isNaN(latNum) || latNum < -90 || latNum > 90 || isNaN(lngNum) || lngNum < -180 || lngNum > 180) {
       return;
     }
 
@@ -100,7 +100,7 @@ export default function LandmarkAdd({
           <div className="px-8 py-6 border-b border-[#c3c6d7] bg-[#f8f9ff]/50">
             <h1 className="text-xl font-extrabold text-gray-900 leading-tight">New Geodata Point</h1>
             <p className="text-xs text-gray-500 mt-1">
-              Populate the fields below to register a new landmark in the Redis geospatial index.
+              Populate the fields below to register a new landmark in the Supabase database.
             </p>
           </div>
 

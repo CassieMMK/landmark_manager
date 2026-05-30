@@ -11,12 +11,14 @@ interface GisSidebarProps {
   searchRadius: string;
   setSearchRadius: (val: string) => void;
   onSearchNearby: () => void;
+  onClearNearby: () => void;
   nearbyResults: { landmark: Landmark; distanceKm: number }[] | null;
   selectedFromLandmarkId: string;
   setSelectedFromLandmarkId: (id: string) => void;
   selectedToLandmarkId: string;
   setSelectedToLandmarkId: (id: string) => void;
   calculatedDistance: number | null;
+  distanceError: string | null;
   onCalculateDistance: () => void;
   onResultClick: (landmark: Landmark) => void;
   onAddClick: () => void;
@@ -31,12 +33,14 @@ export default function GisSidebar({
   searchRadius,
   setSearchRadius,
   onSearchNearby,
+  onClearNearby,
   nearbyResults,
   selectedFromLandmarkId,
   setSelectedFromLandmarkId,
   selectedToLandmarkId,
   setSelectedToLandmarkId,
   calculatedDistance,
+  distanceError,
   onCalculateDistance,
   onResultClick,
   onAddClick,
@@ -183,16 +187,19 @@ export default function GisSidebar({
               </button>
             </form>
 
-            {/* Simulated Redis output */}
+            {/* Nearby search results */}
             {nearbyResults !== null && (
               <div className="mt-6 space-y-3" id="scan-results">
                 <div className="flex justify-between items-center">
                   <h4 className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">
-                    Redis Index Hits ({nearbyResults.length})
+                    Nearby Results ({nearbyResults.length})
                   </h4>
-                  <span className="text-[10px] font-mono font-bold text-[#006c47] bg-[#78fbbb]/10 px-1.5 py-0.5 rounded">
-                    GEORADIUS
-                  </span>
+                  <button
+                    onClick={onClearNearby}
+                    className="text-[10px] font-mono font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-1.5 py-0.5 rounded transition-colors"
+                  >
+                    Clear
+                  </button>
                 </div>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                   {nearbyResults.length === 0 ? (
@@ -274,10 +281,17 @@ export default function GisSidebar({
                 Calculate Range
               </button>
 
+              {distanceError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs font-semibold text-red-600 flex items-center gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  {distanceError}
+                </div>
+              )}
+
               {calculatedDistance !== null && (
                 <div className="p-4 bg-[#78fbbb]/10 border border-[#006c47]/20 rounded-lg text-center" id="distance-result">
                   <span className="text-[10px] font-bold text-[#006c47] tracking-wider uppercase block mb-1">
-                    Geodesic Distance (GEODIST)
+                    Haversine Distance
                   </span>
                   <span className="text-xl font-extrabold text-gray-900 font-mono">
                     {calculatedDistance < 1 ? `${(calculatedDistance * 1000).toFixed(0)} meters` : `${calculatedDistance.toFixed(3)} km`}

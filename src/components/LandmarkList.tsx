@@ -1,48 +1,57 @@
 import React, { useState, useMemo } from 'react';
 import { Landmark } from '../types';
-import { Search, Filter, Trash2, ArrowRight, ChevronLeft, ChevronRight, MapPin, AlertTriangle, Plus, Compass } from 'lucide-react';
+import {
+  Search, Trash2, ChevronLeft, ChevronRight, MapPin, AlertTriangle, Plus,
+  Compass, Pencil, RefreshCw, Info,
+} from 'lucide-react';
 import { LANDMARK_CATEGORIES } from '../utils';
 
 interface LandmarkListProps {
   landmarks: Landmark[];
+  isLoading?: boolean;
+  loadError?: string | null;
   onDeleteLandmark: (id: string) => void;
   onSelectLandmark: (landmark: Landmark) => void;
+  onEditLandmark: (landmark: Landmark) => void;
   setTab: (tab: 'home' | 'list' | 'add') => void;
   onSetNearbyInputs: (lat: number, lng: number) => void;
 }
 
 export default function LandmarkList({
   landmarks,
+  isLoading = false,
+  loadError = null,
   onDeleteLandmark,
   onSelectLandmark,
+  onEditLandmark,
   setTab,
-  onSetNearbyInputs
+  onSetNearbyInputs,
 }: LandmarkListProps) {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All Categories');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(7);
 
-  // States for deleting verification modal
   const [deleteCandidate, setDeleteCandidate] = useState<Landmark | null>(null);
+  const [detailsLandmark, setDetailsLandmark] = useState<Landmark | null>(null);
 
-  // Filter & Search Logic
   const filteredLandmarks = useMemo(() => {
     return landmarks.filter((landmark) => {
-      const matchesSearch = landmark.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        landmark.geohash.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesCategory = selectedCategory === 'All Categories' || landmark.category === selectedCategory;
-      
+      const term = searchTerm.toLowerCase();
+      const matchesSearch =
+        landmark.name.toLowerCase().includes(term) ||
+        landmark.geohash.toLowerCase().includes(term) ||
+        landmark.category.toLowerCase().includes(term);
+
+      const matchesCategory =
+        selectedCategory === 'All Categories' || landmark.category === selectedCategory;
+
       return matchesSearch && matchesCategory;
     });
   }, [landmarks, searchTerm, selectedCategory]);
 
-  // Pagination bounds
   const totalEntries = filteredLandmarks.length;
   const totalPages = Math.ceil(totalEntries / itemsPerPage) || 1;
-  
-  // Shift page if current is empty
   const activePage = currentPage > totalPages ? totalPages : currentPage;
 
   const paginatedLandmarks = useMemo(() => {
@@ -69,10 +78,18 @@ export default function LandmarkList({
     setTab('home');
   };
 
+  const formatTime = (iso?: string) => {
+    if (!iso) return '—';
+    try {
+      return new Date(iso).toLocaleString();
+    } catch {
+      return iso;
+    }
+  };
+
   return (
     <div className="flex-grow flex flex-col md:flex-row max-w-7xl w-full mx-auto" id="landmark-list-workspace">
-      
-      {/* List sidebar / GIS Tools Context drawer */}
+
       <aside className="w-full md:w-[260px] border-b md:border-b-0 md:border-r border-[#c3c6d7] bg-white p-6 flex flex-col shrink-0">
         <div className="mb-8">
           <h2 className="text-base font-bold text-[#003da6]">GIS Tools</h2>
@@ -83,16 +100,16 @@ export default function LandmarkList({
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1 mb-2">
             Operations
           </div>
-          <button 
-            onClick={() => { setTab('home'); }}
+          <button
+            onClick={() => setTab('home')}
             className="flex items-center gap-3 text-left w-full text-xs font-semibold text-gray-600 hover:text-[#003da6] hover:bg-gray-50 p-2.5 rounded-lg transition-colors border border-transparent hover:border-gray-100"
           >
             <Search className="h-4 w-4 text-gray-400" />
             Search Nearby Area
           </button>
-          
-          <button 
-            onClick={() => { setTab('home'); }}
+
+          <button
+            onClick={() => setTab('home')}
             className="flex items-center gap-3 text-left w-full text-xs font-semibold text-gray-600 hover:text-[#003da6] hover:bg-gray-50 p-2.5 rounded-lg transition-colors border border-transparent hover:border-gray-100"
           >
             <Compass className="h-4 w-4 text-gray-400" />
@@ -101,7 +118,7 @@ export default function LandmarkList({
         </div>
 
         <div className="mt-auto pt-6">
-          <button 
+          <button
             onClick={() => setTab('add')}
             className="w-full bg-[#eef4fe] hover:bg-[#0052d9] text-[#003da6] hover:text-white border border-[#003da6]/10 py-3 rounded-lg font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all shadow-sm active:scale-98"
           >
@@ -111,30 +128,29 @@ export default function LandmarkList({
         </div>
       </aside>
 
-      {/* Main content table card */}
       <main className="flex-grow p-6 sm:p-8 bg-[#f8f9ff]">
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 mb-1">Stored Landmarks</h1>
             <p className="text-sm text-gray-500">
-              Manage and audit your geospatial database of <span className="font-bold text-gray-800">{landmarks.length}</span> cache entries, loaded in memory.
+              Manage your Supabase landmarks table — currently <span className="font-bold text-gray-800">{landmarks.length}</span> record(s).
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3" id="filters-row">
-            {/* Search Input */}
             <div className="relative shrink-0">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><Search className="h-4 w-4" /></span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <Search className="h-4 w-4" />
+              </span>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                 className="pl-9 pr-4 py-2 bg-white border border-[#c3c6d7] rounded-lg w-full sm:w-56 focus:border-[#003da6] focus:ring-1 focus:ring-[#003da6]/20 outline-none transition-all text-xs"
-                placeholder="Search by name or geohash..."
+                placeholder="Search by name, category, or geohash..."
               />
             </div>
 
-            {/* Category Filter */}
             <div className="relative truncate">
               <select
                 value={selectedCategory}
@@ -151,31 +167,46 @@ export default function LandmarkList({
           </div>
         </div>
 
-        {/* Stored Landmarks Table Card */}
+        {loadError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-xs font-semibold text-red-700">
+            Supabase error: {loadError}
+          </div>
+        )}
+
         <div className="bg-white border border-[#c3c6d7] rounded-xl shadow-sm overflow-hidden flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse" id="database-grid">
               <thead>
                 <tr className="bg-[#f8f9ff] border-b border-[#c3c6d7] text-gray-400 text-[11px] font-bold tracking-wider uppercase">
-                  <th className="px-6 py-4.5 select-none text-center w-12">#</th>
-                  <th className="px-6 py-4.5">Landmark Name</th>
-                  <th className="px-6 py-4.5 text-center">Latitude</th>
-                  <th className="px-6 py-4.5 text-center">Longitude</th>
-                  <th className="px-6 py-4.5 text-center">Geohash</th>
-                  <th className="px-6 py-4.5 text-right pr-8">Actions</th>
+                  <th className="px-4 py-4.5 select-none text-center w-12">#</th>
+                  <th className="px-4 py-4.5">Landmark Name</th>
+                  <th className="px-4 py-4.5 text-center">Latitude</th>
+                  <th className="px-4 py-4.5 text-center">Longitude</th>
+                  <th className="px-4 py-4.5 text-center">Geohash</th>
+                  <th className="px-4 py-4.5 text-center">Created At</th>
+                  <th className="px-4 py-4.5 text-right pr-6">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100" id="landmarks-rows">
-                {paginatedLandmarks.length === 0 ? (
+                {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-16 px-6">
+                    <td colSpan={7} className="text-center py-16 px-6">
+                      <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Loading landmarks from Supabase...
+                      </div>
+                    </td>
+                  </tr>
+                ) : paginatedLandmarks.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-16 px-6">
                       <div className="max-w-xs mx-auto flex flex-col items-center">
                         <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 mb-3 border border-dashed border-gray-200">
                           <MapPin className="h-5 w-5" />
                         </div>
-                        <h4 className="text-sm font-bold text-gray-900">No Cache Indices Found</h4>
+                        <h4 className="text-sm font-bold text-gray-900">No Landmarks Found</h4>
                         <p className="text-xs text-gray-500 mt-1">
-                          No indexed landmarks found matching those parameters. Adjust filters or register a new landmark.
+                          No records match those filters. Adjust filters or register a new landmark.
                         </p>
                       </div>
                     </td>
@@ -186,36 +217,53 @@ export default function LandmarkList({
                     const paddedNum = String(rowNum).padStart(3, '0');
 
                     return (
-                      <tr 
-                        key={landmark.id} 
+                      <tr
+                        key={landmark.id}
                         className="hover:bg-blue-50/15 transition-all text-xs"
                       >
-                        <td className="px-6 py-4 text-center font-mono font-bold text-gray-400 select-none">
+                        <td className="px-4 py-4 text-center font-mono font-bold text-gray-400 select-none">
                           {paddedNum}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4">
                           <div className="flex flex-col">
-                            <span className="font-bold text-gray-900 hover:text-[#003da6] transition-colors">
+                            <button
+                              onClick={() => setDetailsLandmark(landmark)}
+                              className="text-left font-bold text-gray-900 hover:text-[#003da6] transition-colors"
+                              title="View full details"
+                            >
                               {landmark.name}
-                            </span>
+                            </button>
                             <span className="text-[10px] text-gray-500 font-semibold mt-0.5">
                               {landmark.category}
                             </span>
+                            <span className="text-[10px] text-gray-400 font-mono mt-0.5 truncate max-w-[200px]" title={landmark.id}>
+                              ID: {landmark.id}
+                            </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center font-mono text-gray-600">
+                        <td className="px-4 py-4 text-center font-mono text-gray-600">
                           {landmark.latitude.toFixed(5)}°N
                         </td>
-                        <td className="px-6 py-4 text-center font-mono text-gray-600">
+                        <td className="px-4 py-4 text-center font-mono text-gray-600">
                           {landmark.longitude.toFixed(5)}°E
                         </td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-4 py-4 text-center">
                           <span className="inline-block px-2.5 py-1 bg-[#0052d9]/10 text-[#003da6] font-semibold rounded font-mono text-[11px] border border-blue-50">
                             {landmark.geohash}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right pr-6 shrink-0">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="px-4 py-4 text-center text-[11px] text-gray-500 font-mono whitespace-nowrap">
+                          {formatTime(landmark.created_at)}
+                        </td>
+                        <td className="px-4 py-4 text-right pr-4 shrink-0">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => setDetailsLandmark(landmark)}
+                              className="p-1.5 text-gray-500 hover:text-[#003da6] hover:bg-gray-100 rounded transition-all"
+                              title="View full details"
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
                             <button
                               onClick={() => handleFocusOnMap(landmark)}
                               className="p-1 px-2.5 rounded bg-[#eef4fe] hover:bg-[#003da6] text-[#003da6] hover:text-white font-bold text-[10px] uppercase tracking-wide transition-all"
@@ -226,14 +274,22 @@ export default function LandmarkList({
                             <button
                               onClick={() => handleQueryNearby(landmark)}
                               className="p-1 px-2 text-gray-600 hover:text-[#003da6] hover:bg-gray-100 rounded text-[10px] font-bold uppercase transition-all"
-                              title="Set coordinates for queries"
+                              title="Use as search center"
                             >
                               Scan Nearby
                             </button>
                             <button
+                              onClick={() => onEditLandmark(landmark)}
+                              className="p-1 px-2 rounded bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white font-bold text-[10px] uppercase tracking-wide transition-all flex items-center gap-1"
+                              title="Edit this landmark"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              Edit
+                            </button>
+                            <button
                               onClick={() => setDeleteCandidate(landmark)}
                               className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
-                              title="Remove index from Redis cache"
+                              title="Delete landmark"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -247,24 +303,23 @@ export default function LandmarkList({
             </table>
           </div>
 
-          {/* Simple Pagination Footer bar */}
-          {filteredLandmarks.length > 0 && (
+          {!isLoading && filteredLandmarks.length > 0 && (
             <div className="px-6 py-4 flex flex-col sm:flex-row items-center justify-between border-t border-gray-100 bg-[#f8f9ff]/50 gap-3 text-xs">
               <span className="text-gray-500 font-medium">
                 Showing <span className="font-bold text-gray-900">{startEntry}</span> to{' '}
                 <span className="font-bold text-gray-900">{endEntry}</span> of{' '}
-                <span className="font-bold text-gray-900">{totalEntries}</span> cached indexes
+                <span className="font-bold text-gray-900">{totalEntries}</span> records
               </span>
-              
+
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={activePage === 1}
                   className="p-1.5 rounded border border-gray-200 bg-white hover:bg-gray-50 hover:border-[#c3c6d7] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   <ChevronLeft className="h-4 w-4 text-gray-600" />
                 </button>
-                
+
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
                   <button
                     key={pageNum}
@@ -280,7 +335,7 @@ export default function LandmarkList({
                 ))}
 
                 <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={activePage === totalPages}
                   className="p-1.5 rounded border border-gray-200 bg-white hover:bg-gray-50 hover:border-[#c3c6d7] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
@@ -292,14 +347,14 @@ export default function LandmarkList({
         </div>
       </main>
 
-      {/* Delete Confirmation Modal Overlay */}
+      {/* Delete Confirmation Modal */}
       {deleteCandidate && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" id="deleteModal">
-          <div 
-            className="absolute inset-0 bg-[#161c23]/60 backdrop-blur-sm transition-opacity" 
+          <div
+            className="absolute inset-0 bg-[#161c23]/60 backdrop-blur-sm transition-opacity"
             onClick={() => setDeleteCandidate(null)}
           />
-          
+
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200 border border-gray-100">
             <div className="p-6">
               <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4 text-red-500 border border-red-100">
@@ -307,11 +362,11 @@ export default function LandmarkList({
               </div>
               <h3 className="text-base font-extrabold text-gray-900 mb-2">Delete Landmark?</h3>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Are you absolutely sure you want to delete <span className="font-bold text-gray-900">"{deleteCandidate.name}"</span>? 
-                This action is irreversible and will purge the hash cache <span className="font-mono bg-gray-50 text-red-500 px-1 px-1.5 rounded">{deleteCandidate.geohash}</span> immediately.
+                Are you sure you want to delete <span className="font-bold text-gray-900">"{deleteCandidate.name}"</span>?
+                This will permanently remove the record (geohash <span className="font-mono bg-gray-50 text-red-500 px-1 rounded">{deleteCandidate.geohash}</span>) from Supabase.
               </p>
             </div>
-            
+
             <div className="bg-[#f8f9ff]/80 border-t border-gray-100 px-6 py-4 flex gap-3 flex-row-reverse">
               <button
                 onClick={handleDeleteConfirm}
@@ -324,6 +379,69 @@ export default function LandmarkList({
                 className="px-5 py-2 bg-white border border-[#c3c6d7] text-gray-500 rounded-lg text-xs font-bold hover:bg-gray-50 transition-all active:scale-[98]"
               >
                 Discard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Details Modal */}
+      {detailsLandmark && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" id="detailsModal">
+          <div
+            className="absolute inset-0 bg-[#161c23]/60 backdrop-blur-sm"
+            onClick={() => setDetailsLandmark(null)}
+          />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-[#c3c6d7] animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-5 border-b border-[#c3c6d7] bg-[#f8f9ff]/50 flex items-start justify-between">
+              <div>
+                <h3 className="text-base font-extrabold text-gray-900">{detailsLandmark.name}</h3>
+                <p className="text-[11px] text-gray-500 font-semibold mt-0.5">{detailsLandmark.category}</p>
+              </div>
+              <button
+                onClick={() => setDetailsLandmark(null)}
+                className="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-all"
+                title="Close"
+              >
+                <span className="text-lg leading-none">×</span>
+              </button>
+            </div>
+            <div className="p-6 space-y-3 text-xs text-gray-700">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Latitude</span>
+                  <span className="font-mono">{detailsLandmark.latitude.toFixed(6)}°N</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Longitude</span>
+                  <span className="font-mono">{detailsLandmark.longitude.toFixed(6)}°E</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Geohash</span>
+                  <span className="font-mono text-[#003da6]">{detailsLandmark.geohash}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Created At</span>
+                  <span className="font-mono">{formatTime(detailsLandmark.created_at)}</span>
+                </div>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">ID</span>
+                <span className="font-mono break-all">{detailsLandmark.id}</span>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-[#c3c6d7] bg-[#f8f9ff]/50 flex justify-end gap-2">
+              <button
+                onClick={() => { onEditLandmark(detailsLandmark); setDetailsLandmark(null); }}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+              >
+                <Pencil className="h-3.5 w-3.5" /> Edit
+              </button>
+              <button
+                onClick={() => { handleFocusOnMap(detailsLandmark); }}
+                className="px-4 py-2 bg-[#003da6] hover:bg-[#0052d9] text-white rounded-lg text-xs font-bold transition-all"
+              >
+                Plot on Map
               </button>
             </div>
           </div>
