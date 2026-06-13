@@ -1,0 +1,6 @@
+{
+  "name": "Landmark Manager",
+  "description": "Geospatial Precision System with Redis GEO indexing, interactive landmark maps, nearby search queries, geodesic distance calculations, and real-time database dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
